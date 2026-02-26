@@ -1,9 +1,14 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using System.Text;
+using TaxCalculator.Api.JWT;
 using TaxCalculator.Data;
 using TaxCalculator.Services;
-using Serilog;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 namespace TaxCalculator
 {
@@ -28,9 +33,10 @@ namespace TaxCalculator
                 b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
                 ));
 
-            // Add identity services
-            builder.Services.AddIdentityApiEndpoints<IdentityUser>()
-                .AddEntityFrameworkStores<Data.AppDbContext>();
+            // Identity
+            builder.Services
+                .AddIdentityCore<IdentityUser>()
+                .AddEntityFrameworkStores<AppDbContext>();
 
             builder.Services.Configure<IdentityOptions>(options =>
             {
@@ -51,9 +57,35 @@ namespace TaxCalculator
                 options.User.RequireUniqueEmail = false;
             });
 
+            var jwtKey = builder.Configuration["Jwt:Key"];
+            var issuer = builder.Configuration["Jwt:Issuer"];
+            var audience = builder.Configuration["Jwt:Audience"];
+
+            // JWT authentication
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+
+                        ValidIssuer = issuer,
+                        ValidAudience = audience,
+                        IssuerSigningKey =
+                            new SymmetricSecurityKey(
+                                Encoding.UTF8.GetBytes(jwtKey))
+                    };
+                });
+
             builder.Services.AddAuthorization();
 
             builder.Services.AddControllers();
+
+            builder.Services.Configure<JwtOptions>(
+            builder.Configuration.GetSection("Jwt"));
 
             // Register calculators and selector (Strategy pattern)
             builder.Services.AddScoped<ZeroTaxCalculator>();
@@ -63,6 +95,9 @@ namespace TaxCalculator
             builder.Services.AddScoped<ITaxCalculator, StrategyTaxCalculator>();
 
             builder.Services.AddScoped<ITaxBandRepository, TaxBandRepository>();
+
+            builder.Services.AddScoped<JwtTokenService>();
+
             // health checks
             builder.Services.AddHealthChecks()
                 .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
@@ -126,8 +161,42 @@ namespace TaxCalculator
                 }
             });
 
-            app.MapIdentityApi<IdentityUser>(); // add (/register, /login, /refresh)
+            app.MapPost("/login",
+                async (
+                    LoginRequest request,
+                    UserManager<IdentityUser> userManager,
+                    JwtTokenService tokenService) =>
+                {
+                    var user = await userManager.FindByEmailAsync(request.Email);
 
+                    if (user == null ||
+                        !await userManager.CheckPasswordAsync(user, request.Password))
+                    {
+                        return Results.Unauthorized();
+                    }
+
+                    var token = tokenService.CreateToken(user);
+
+                    return Results.Ok(new { access_token = token });
+                });
+
+            app.MapPost("/register",
+                async (RegisterRequest request, UserManager<IdentityUser> userManager) =>
+                {
+                    var user = new IdentityUser
+                    {
+                        UserName = request.Email,
+                        Email = request.Email
+                    };
+
+                    var result = await userManager.CreateAsync(user, request.Password);
+
+                    return result.Succeeded
+                        ? Results.Ok()
+                        : Results.BadRequest(result.Errors);
+                });
+
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
