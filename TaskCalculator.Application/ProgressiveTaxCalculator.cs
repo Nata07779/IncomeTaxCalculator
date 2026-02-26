@@ -6,19 +6,19 @@ namespace TaxCalculator.Services
     // Strategy for progressive tax calculation
     public class ProgressiveTaxCalculator : ITaxCalculator
     {
-        private readonly ITaxBandRepository _taxBandService;
+        private readonly ITaxBandRepository _taxBandRepository;
         private readonly ILogger<ProgressiveTaxCalculator> _logger;
 
-        public ProgressiveTaxCalculator(ITaxBandRepository taxBandService, ILogger<ProgressiveTaxCalculator> logger)
+        public ProgressiveTaxCalculator(ITaxBandRepository taxBandRepository, ILogger<ProgressiveTaxCalculator> logger)
         {
-            _taxBandService = taxBandService;
+            _taxBandRepository = taxBandRepository;
             _logger = logger;
         }
 
         // Calculate tax using progressive bands. Financial specifics: round to 2 decimal places using MidpointRounding.ToEven
         public async Task<TaxCalculationResult> CalculateAsync(decimal grossAnnualSalary)
         {
-            var restoredBands = await _taxBandService.GetTaxBandsAsync();
+            var restoredBands = await _taxBandRepository.GetTaxBandsAsync();
             decimal remaining = grossAnnualSalary;
             decimal taxTotal = 0m;
 

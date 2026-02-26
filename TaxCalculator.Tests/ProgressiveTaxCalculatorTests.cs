@@ -43,8 +43,8 @@ namespace TaxCalculator.Tests
         {
             // Arrange
             var db = CreateInMemoryDb();
-            var taxBandService = new TaxBandRepository(db, NullLogger<TaxBandRepository>.Instance);
-            var calc = new ProgressiveTaxCalculator(taxBandService, NullLogger<ProgressiveTaxCalculator>.Instance);
+            var taxBandRepository = new TaxBandRepository(db, NullLogger<TaxBandRepository>.Instance);
+            var calc = new ProgressiveTaxCalculator(taxBandRepository, NullLogger<ProgressiveTaxCalculator>.Instance);
 
             // Act
             var result = await calc.CalculateAsync((decimal)grossAnnualSalary);
