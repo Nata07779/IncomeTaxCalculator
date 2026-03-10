@@ -37,7 +37,8 @@ namespace TaxCalculator.Tests
                 { typeof(ProgressiveTaxCalculator), progressive }
             };
             var sp = new SimpleServiceProvider(map);
-            var selector = new TaxCalculatorSelector(sp);
+            var taxCalculators = new ITaxCalculator[] { plain, progressive };
+            var selector = new TaxCalculatorSelector(taxCalculators);
 
             // Act
             var calc = selector.Select(0m);
@@ -58,7 +59,8 @@ namespace TaxCalculator.Tests
                 { typeof(ProgressiveTaxCalculator), progressive }
             };
             var sp = new SimpleServiceProvider(map);
-            var selector = new TaxCalculatorSelector(sp);
+            var taxCalculators = new ITaxCalculator[] { plain, progressive };
+            var selector = new TaxCalculatorSelector(taxCalculators);
 
             // Act
             var calc = selector.Select(100m);

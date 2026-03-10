@@ -1,3 +1,4 @@
+using TaskCalculator.Domain.Enums;
 using TaxCalculator.Models;
 
 namespace TaxCalculator.Services
@@ -5,6 +6,7 @@ namespace TaxCalculator.Services
     // Simple calculator used for (salary == 0)
     public class ZeroTaxCalculator : ITaxCalculator
     {
+        public TaxCalculatorType Type => TaxCalculatorType.Zero;
         public Task<TaxCalculationResult> CalculateAsync(decimal grossAnnualSalary)
         {
             // For a zero salary, all results are zeroed with proper rounding

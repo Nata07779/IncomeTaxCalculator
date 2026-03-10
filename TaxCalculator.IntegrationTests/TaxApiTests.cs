@@ -1,10 +1,12 @@
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using TaxCalculator.Data;
 using TaxCalculator.Models;
 using Xunit;
@@ -48,6 +50,19 @@ namespace TaxCalculator.IntegrationTests
                             db.SaveChanges();
                         }
                     }
+                });
+
+                builder.ConfigureAppConfiguration((context, cfg) =>
+                {
+                    cfg.Sources.Clear();
+                    var testConfig = new Dictionary<string, string>
+                        {
+                            { "Jwt:Key", "MOCKED-VALUE" },
+                            { "Jwt:Issuer", "MOCKED-VALUE" },
+                            { "Jwt:Audience", "MOCKED-VALUE" }
+                        };
+
+                    cfg.AddInMemoryCollection(testConfig);
                 });
             });
         }

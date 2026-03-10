@@ -1,22 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using TaskCalculator.Domain.Interfaces;
 using TaxCalculator.Models;
-using TaxCalculator.Services;
 
 namespace TaxCalculator.Controllers
 {
     [ApiController]
     [Route("api/tax")]
-    public class TaxController : ControllerBase
+    public class TaxController(IStrategyTaxCalculator calculator, ILogger<TaxController> logger) : ControllerBase
     {
-        private readonly ITaxCalculator _calculator;
-        private readonly ILogger<TaxController> _logger;
-
-        public TaxController(ITaxCalculator calculator, ILogger<TaxController> logger)
-        {
-            _calculator = calculator;
-            _logger = logger;
-        }
-
         [HttpPost("calculations")] 
         public async Task<ActionResult<TaxCalculationResult>> Calculate([FromBody] TaxCalculationRequest request)
         {
@@ -26,9 +17,9 @@ namespace TaxCalculator.Controllers
             if (request.GrossAnnualSalary < 0)
                 return BadRequest("GrossAnnualSalary must be non-negative");
 
-            _logger.LogInformation("Calculating tax for gross annual salary {GrossAnnualSalary}", request.GrossAnnualSalary);
-            var result = await _calculator.CalculateAsync(request.GrossAnnualSalary);
-            _logger.LogInformation("Calculation completed for {GrossAnnualSalary}: AnnualTax={AnnualTax}", request.GrossAnnualSalary, result.AnnualTaxPaid);
+            logger.LogInformation("Calculating tax for gross annual salary {GrossAnnualSalary}", request.GrossAnnualSalary);
+            var result = await calculator.CalculateAsync(request.GrossAnnualSalary);
+            logger.LogInformation("Calculation completed for {GrossAnnualSalary}: AnnualTax={AnnualTax}", request.GrossAnnualSalary, result.AnnualTaxPaid);
 
             return Ok(result);
         }
