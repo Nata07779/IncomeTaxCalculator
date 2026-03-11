@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using TaskCalculator.Domain.Enums;
 using TaxCalculator.Models;
 using TaxCalculator.Services;
 using Xunit;
@@ -54,6 +55,9 @@ namespace TaxCalculator.Tests
         private class FakeCalculator : ITaxCalculator
         {
             public bool Called { get; private set; }
+
+            public TaxCalculatorType Type => TaxCalculatorType.Unspecified;
+
             private readonly TaxCalculationResult _result;
 
             public FakeCalculator(TaxCalculationResult result) => _result = result;

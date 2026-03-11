@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Text;
+using TaskCalculator.Domain.Interfaces;
 using TaxCalculator.Api.JWT;
 using TaxCalculator.Data;
 using TaxCalculator.Services;
@@ -57,10 +58,6 @@ namespace TaxCalculator
                 options.User.RequireUniqueEmail = false;
             });
 
-            var jwtKey = builder.Configuration["Jwt:Key"];
-            var issuer = builder.Configuration["Jwt:Issuer"];
-            var audience = builder.Configuration["Jwt:Audience"];
-
             // JWT authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -72,27 +69,27 @@ namespace TaxCalculator
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
 
-                        ValidIssuer = issuer,
-                        ValidAudience = audience,
+                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                        ValidAudience = builder.Configuration["Jwt:Audience"],
                         IssuerSigningKey =
                             new SymmetricSecurityKey(
-                                Encoding.UTF8.GetBytes(jwtKey))
+                                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
                     };
                 });
+
+            builder.Services.Configure<JwtOptions>(
+            builder.Configuration.GetSection("Jwt"));
 
             builder.Services.AddAuthorization();
 
             builder.Services.AddControllers();
 
-            builder.Services.Configure<JwtOptions>(
-            builder.Configuration.GetSection("Jwt"));
-
             // Register calculators and selector (Strategy pattern)
-            builder.Services.AddScoped<ZeroTaxCalculator>();
-            builder.Services.AddScoped<ProgressiveTaxCalculator>();
+            builder.Services.AddScoped<ITaxCalculator, ZeroTaxCalculator>();
+            builder.Services.AddScoped<ITaxCalculator, ProgressiveTaxCalculator>();
             builder.Services.AddScoped<ITaxCalculatorSelector, TaxCalculatorSelector>();
             // Strategy wrapper is the one exposed as ITaxCalculator
-            builder.Services.AddScoped<ITaxCalculator, StrategyTaxCalculator>();
+            builder.Services.AddScoped<IStrategyTaxCalculator, StrategyTaxCalculator>();
 
             builder.Services.AddScoped<ITaxBandRepository, TaxBandRepository>();
 

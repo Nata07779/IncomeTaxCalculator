@@ -1,9 +1,10 @@
+using TaskCalculator.Domain.Interfaces;
 using TaxCalculator.Models;
 
 namespace TaxCalculator.Services
 {
     // Strategy wrapper that selects the appropriate calculator per request
-    public class StrategyTaxCalculator : ITaxCalculator
+    public class StrategyTaxCalculator : IStrategyTaxCalculator
     {
         private readonly ITaxCalculatorSelector _selector;
 

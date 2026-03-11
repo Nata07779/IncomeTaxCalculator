@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using TaskCalculator.Domain.Enums;
 using TaxCalculator.Models;
 
 namespace TaxCalculator.Services
@@ -14,6 +15,8 @@ namespace TaxCalculator.Services
             _taxBandRepository = taxBandRepository;
             _logger = logger;
         }
+
+        public TaxCalculatorType Type => TaxCalculatorType.Progressive;
 
         // Calculate tax using progressive bands. Financial specifics: round to 2 decimal places using MidpointRounding.ToEven
         public async Task<TaxCalculationResult> CalculateAsync(decimal grossAnnualSalary)

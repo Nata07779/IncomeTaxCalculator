@@ -1,25 +1,40 @@
-using Microsoft.Extensions.DependencyInjection;
+using TaskCalculator.Domain.Enums;
 
 namespace TaxCalculator.Services
 {
     // Factory to select appropriate tax calculator based on gross annual salary.
     public class TaxCalculatorSelector : ITaxCalculatorSelector
     {
-        private readonly IServiceProvider _sp;
+        private readonly IEnumerable<ITaxCalculator> _taxCalculators;
 
-        public TaxCalculatorSelector(IServiceProvider sp)
+        public TaxCalculatorSelector(IEnumerable<ITaxCalculator> taxCalculators)
         {
-            _sp = sp;
+            _taxCalculators = taxCalculators;
         }
 
         public ITaxCalculator Select(decimal grossAnnualSalary)
         {
+            var taxCalculatorType = TaxCalculatorType.Progressive;
             if (grossAnnualSalary == 0m)
             {
-                return _sp.GetRequiredService<ZeroTaxCalculator>();
+                taxCalculatorType = TaxCalculatorType.Zero;
             }
 
-            return _sp.GetRequiredService<ProgressiveTaxCalculator>();
+            var calculator = GetCalculatorByType(taxCalculatorType);
+
+            return calculator;
+        }
+
+        private ITaxCalculator GetCalculatorByType(TaxCalculatorType taxCalculatorType)
+        {
+            var calculator = _taxCalculators.FirstOrDefault(x => x.Type == taxCalculatorType);
+
+            if (calculator is null)
+            {
+                throw new InvalidOperationException($"No tax calculator found for type {taxCalculatorType}.");
+            }
+
+            return calculator;
         }
     }
 }
